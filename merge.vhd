@@ -45,15 +45,14 @@ end component;
 
 signal din_a, din_b, dout_a, dout_b : std_logic_vector(40 downto 0);
 signal pix_a, pix_b: pixel_data_type;
--- signal q_reg : pixel_data_type;
 signal a_lte_b, re_a, re_b, empty_a, empty_b : std_logic;
 
 begin
 
 -- manually pack input data into vectors
 
-din_a <= a.valid & a.tot & a.toa & a.cal & a.row & a.col & a.ecnt;
-din_b <= b.valid & b.tot & b.toa & b.cal & b.row & b.col & b.ecnt;
+din_a <= a.valid & a.tot & a.toa & a.cal & a.row & a.col & a.enum;
+din_b <= b.valid & b.tot & b.toa & b.cal & b.row & b.col & b.enum;
 
 -- instantiate FIFOs
 
@@ -83,34 +82,32 @@ port map(
 
 -- manually unpack FIFO outputs
 
-pix_a.valid <= dout_a(45);
-pix_a.tot   <= dout_a(44 downto 36);
-pix_a.toa   <= dout_a(35 downto 26);
-pix_a.cal   <= dout_a(25 downto 16);
-pix_a.row   <= dout_a(15 downto 12);
-pix_a.col   <= dout_a(11 downto  3);
-pix_a.bcid  <= dout_a( 2 downto  0);
+pix_a.valid <= dout_a(40);
+pix_a.tot   <= dout_a(39 downto 31);
+pix_a.toa   <= dout_a(30 downto 21);
+pix_a.cal   <= dout_a(20 downto 11);
+pix_a.row   <= dout_a(10 downto 7 );
+pix_a.col   <= dout_a(6 downto 3);
+pix_a.enum  <= dout_a(2 downto 0);
 
-pix_b.valid <= dout_b(45);
-pix_b.tot   <= dout_b(44 downto 36);
-pix_b.toa   <= dout_b(35 downto 26);
-pix_b.cal   <= dout_b(25 downto 16);
-pix_b.row   <= dout_b(15 downto 12);
-pix_b.col   <= dout_b(11 downto  8);
-pix_b.bcid  <= dout_b( 2 downto  0);
+pix_b.valid <= dout_b(40);
+pix_b.tot   <= dout_b(39 downto 31);
+pix_b.toa   <= dout_b(30 downto 21);
+pix_b.cal   <= dout_b(20 downto 11);
+pix_b.row   <= dout_b(10 downto 7);
+pix_b.col   <= dout_b(6 downto 3);
+pix_b.enum  <= dout_b(2 downto  0);
 
--- simple selection logic 
+-- select logic consider the event number fields and use a LUT to choose the old
 
--- consider the event count fields and use a LUT to choose the old
-
-a_older <= '1' when ( pix_a.ecnt <= pix_b.ecnt ) else '0';
+a_lte_b <= '1' when ( pix_a.enum <= pix_b.enum ) else '0';
 
 re_a <= '1' when (empty_a='0' and empty_b='1') else -- FIFO A has something, FIFO B is empty
-        '1' when (empty_a='0' and empty_b='0' and a_older='1') else -- both FIFOs have stuff, choose A because it is older
+        '1' when (empty_a='0' and empty_b='0' and a_lte_b='1') else -- both FIFOs have stuff, choose A because it is older
         '0';
 
 re_b <= '1' when (empty_a='1' and empty_b='0') else -- FIFO A is empty, FIFO B has something
-        '1' when (empty_a='0' and empty_b='0' and a_older='0') else -- both FIFOs have stuff, choose B because it is older
+        '1' when (empty_a='0' and empty_b='0' and a_lte_b='0') else -- both FIFOs have stuff, choose B because it is older
         '0';
 
 -- combinatorial output version

@@ -1,7 +1,7 @@
 -- etroc2.vhd
 -- ETROC2 top level, model this as a 256 1D array (logically same as 16x16 2D array just simpler to code)
 -- jamieson olsen <jamieson@fnal.gov>
---
+-- not done yet, need to add pixel modules in here and include L1acc...
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -12,14 +12,25 @@ use work.etroc2_package.all;
 
 entity etroc2 is
 port(
-    clock: in std_logic;
-    reset: in std_logic;
-    d: in pixel_data_array_256_type;
-    q: out pixel_data_type
+    clock: in  std_logic;
+    reset: in  std_logic;
+	l1acc: in  std_logic;
+    d:     in  pixel_data_array_256_type;
+    q:     out pixel_data_type
   );
 end etroc2;
 
 architecture etroc2_arch of etroc2 is
+
+component pixel is
+generic(ROW,COL: integer range 0 to 3);
+port(
+    clock: in std_logic;
+	l1acc: in std_logic;
+    din:   in tdc_data_type;
+    dout:  out pixel_data_type
+  );
+end component;
 
 component merge is
 generic ( constant FIFO_DEPTH : positive := 4 );

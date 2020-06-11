@@ -76,7 +76,7 @@ clr_all;
 
 wait for 1000ns;
 
--- first event
+-- short event 1
 
 wait until falling_edge(clock);
 set_pixel(4, 3, 122, 45, 98);
@@ -90,9 +90,9 @@ l1acc <= '1';
 wait until falling_edge(clock);
 l1acc <= '0';
 
-wait for 1000ns;  
+wait for 600ns;  
 
--- a high occupancy event
+-- a high occupancy event 2
 
 wait until falling_edge(clock);
 set_pixel(6, 11,  0, 21,  0);
@@ -126,9 +126,10 @@ l1acc <= '1';
 wait until falling_edge(clock);
 l1acc <= '0';
 
-wait for 1000ns;  
+wait for 600ns;  
 
--- now try back to back to back L1accepts
+-- now try back to back to back L1accepts, still busy with previous event...
+-- events 3,4,5
 
 wait until falling_edge(clock);
 set_pixel(6, 1, 106, 107, 108);
@@ -161,6 +162,22 @@ wait for 25ns * (L1ACC_OFFSET -2) ;
 l1acc <= '1';
 wait until falling_edge(clock);
 wait until falling_edge(clock);
+wait until falling_edge(clock);
+l1acc <= '0';
+
+wait for 1000ns; -- enough time for the pixel circular buffer pointers to wrap around...
+
+-- short event 6
+
+wait until falling_edge(clock);
+set_pixel(6, 8, 111, 25, 33);
+set_pixel(12, 3, 92, 15, 12);
+set_pixel(7, 7, 71, 62, 99);
+set_pixel(3, 11, 43, 69, 100);
+wait until falling_edge(clock);
+clr_all;
+wait for 25ns * L1ACC_OFFSET;
+l1acc <= '1';
 wait until falling_edge(clock);
 l1acc <= '0';
 

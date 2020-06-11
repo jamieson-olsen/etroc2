@@ -26,21 +26,14 @@ end pixel;
 
 architecture pixel_arch of pixel is
 
-type memory_t is array((2**PIX_BUF_ADDR_WIDTH)-1 downto 0) of pixel_data_type;
+type memory_t is array((2**PIX_BUF_ADDR_WIDTH)-1 downto 0) of tdc_data_type;
 signal memory : memory_t;
-signal temp: pixel_data_type;
+signal tdc_out_reg: tdc_data_type;
 signal wptr, rptr: std_logic_vector(PIX_BUF_ADDR_WIDTH-1 downto 0) := (others=>'0');
 signal enum_reg: std_logic_vector( (pixel_data_type.enum'length-1) downto 0) := (others=>'0');
 
 begin
 
-temp.valid <= din.valid;
-temp.tot   <= din.tot;
-temp.toa   <= din.toa;
-temp.cal   <= din.cal;
-temp.row   <= std_logic_vector( to_unsigned(ROW,4) );
-temp.col   <= std_logic_vector( to_unsigned(COL,4) );
-temp.enum  <= enum_reg;
 
 write_proc: process(clock) -- sync write into buffer
 begin
@@ -50,41 +43,51 @@ begin
 
 			wptr <= (others=>'0');
 			rptr <= (others=>'0');
-			enum_reg <= (others=>'0');
 
 		else
 
 			wptr <= std_logic_vector(unsigned(wptr) + 1);
 			rptr <= std_logic_vector(unsigned(wptr) - L1ACC_OFFSET);
 	
-			if (unsigned(temp.tot) > TOT_THRESHOLD) then
-				memory( to_integer(unsigned(wptr)) ) <= temp; -- store tdc data in circ buffer
+			if (unsigned(din.tot) > TOT_THRESHOLD) then
+				memory( to_integer(unsigned(wptr)) ) <= din; -- store tdc data in circ buffer
 			else
-				memory( to_integer(unsigned(wptr)) ) <= null_pixel_data; -- write all zeros to circ buffer
+				memory( to_integer(unsigned(wptr)) ) <= null_tdc_data; -- write all zeros to circ buffer
 			end if;
 	
-			if (l1acc='1') then
-				enum_reg <= std_logic_vector(unsigned(enum_reg)+1); -- this event counter simply increments with l1acc
-			end if;
-
 		end if;
 	end if;
 end process write_proc;
 
 -- register the output
+-- as pixel data leaves this module it is tagged with ROW, COL, and EventNumber information
+-- note the event number simply increments with each L1Acc and is NOT the BCID. this number
+-- helps the merge modules determine which TDC pixel value is OLDER
 
 out_proc: process(clock) 
 begin
 	if rising_edge(clock) then
-		if (l1acc='1') then
-			dout <= memory( to_integer(unsigned(rptr)) );
+		if (reset='1') then
+			enum_reg <= (others=>'0');
+			tdc_out_reg <= null_tdc_data;
 		else
-			dout <= null_pixel_data;
+
+			if (l1acc='1') then
+				enum_reg <= std_logic_vector(unsigned(enum_reg)+1);
+				tdc_out_reg <= memory( to_integer(unsigned(rptr)) );
+			else
+				tdc_out_reg <= null_tdc_data;
+			end if;
 		end if;
 	end if;
 end process out_proc;
 
-
-
+dout.valid <= tdc_out_reg.valid;
+dout.tot  <= tdc_out_reg.tot;
+dout.toa  <= tdc_out_reg.toa;
+dout.cal  <= tdc_out_reg.cal;
+dout.row  <= std_logic_vector( to_unsigned(ROW,4) );
+dout.col  <= std_logic_vector( to_unsigned(COL,4) );
+dout.enum <= enum_reg;
 
 end pixel_arch;

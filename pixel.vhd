@@ -17,6 +17,7 @@ entity pixel is
 generic(ROW,COL: integer range 0 to 3);
 port(
     clock: in std_logic;
+	reset: in std_logic;
 	l1acc: in std_logic;
     din:   in tdc_data_type;
     dout:  out pixel_data_type
@@ -45,19 +46,28 @@ write_proc: process(clock) -- sync write into buffer
 begin
 	if rising_edge(clock) then
 
-		wptr <= wptr + 1;
-		rptr <= wptr - L1ACC_OFFSET;
+		if (reset='1') then
 
-		if (unsigned(temp.tot) > TOT_THRESHOLD) then
-			memory(wptr) <= temp; -- store tdc data in circ buffer
+			wptr <= 0;
+			rptr <= 0;
+			enum_reg <= (others=>'0');
+
 		else
-			memory(wptr) <= null_pixel_data; -- write all zeros to circ buffer
-		end if;
 
-		if (l1acc='1') then
-			enum_reg <= std_logic_vector(unsigned(enum_reg)+1); -- this event counter simply increments with l1acc
-		end if;
+			wptr <= wptr + 1;
+			rptr <= wptr - L1ACC_OFFSET;
+	
+			if (unsigned(temp.tot) > TOT_THRESHOLD) then
+				memory(wptr) <= temp; -- store tdc data in circ buffer
+			else
+				memory(wptr) <= null_pixel_data; -- write all zeros to circ buffer
+			end if;
+	
+			if (l1acc='1') then
+				enum_reg <= std_logic_vector(unsigned(enum_reg)+1); -- this event counter simply increments with l1acc
+			end if;
 
+		end if;
 	end if;
 end process write_proc;
 

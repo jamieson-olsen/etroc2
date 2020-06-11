@@ -1,7 +1,6 @@
 -- etroc2.vhd
--- ETROC2 top level, model this as a 256 1D array (logically same as 16x16 2D array just simpler to code)
+-- ETROC2 top level, 16 x 16 array of pixel modules followed by tiers of merge modules
 -- jamieson olsen <jamieson@fnal.gov>
--- not done yet, need to add pixel modules in here and include L1acc...
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -15,7 +14,7 @@ port(
     clock: in  std_logic;
     reset: in  std_logic;
 	l1acc: in  std_logic;
-    d:     in  pixel_data_array_256_type;
+    d:     in  tdc_data_array_16_16_type;
     q:     out pixel_data_type
   );
 end etroc2;
@@ -26,6 +25,7 @@ component pixel is
 generic(ROW,COL: integer range 0 to 3);
 port(
     clock: in std_logic;
+	reset: in std_logic;
 	l1acc: in std_logic;
     din:   in tdc_data_type;
     dout:  out pixel_data_type
@@ -42,59 +42,97 @@ port(
 );
 end component;
 
-signal t2d: pixel_data_array_128_type;
-signal t3d: pixel_data_array_64_type;
-signal t4d: pixel_data_array_32_type;
+signal pix_dout: pixel_data_array_16_16_type;
+signal t2d: pixel_data_array_8_16_type;
+signal t3d: pixel_data_array_4_16_type;
+signal t4d: pixel_data_array_2_16_type;
 signal t5d: pixel_data_array_16_type;
 signal t6d: pixel_data_array_8_type;
 signal t7d: pixel_data_array_4_type;
 signal t8d: pixel_data_array_2_type;
-
 signal q_reg, t8q: pixel_data_type;
 
 begin
 
-T1_gen: for i in 127 downto 0 generate
-    merge_inst: merge 
-        generic map( FIFO_DEPTH => 4 )
-        port map( clock => clock, reset => reset, a => d(2*i), b => d((2*i)+1), q => t2d(i) );
-end generate T1_gen;
+-- 16x16 pixel array
 
-T2_gen: for i in 63 downto 0 generate
-    merge_inst: merge 
-        generic map( FIFO_DEPTH => 8 )
-        port map( clock => clock, reset => reset, a => t2d(2*i), b => t2d((2*i)+1), q => t3d(i) );
-end generate T2_gen;
+Pix_Row_Gen: for R in 15 downto 0 generate
+	Pix_Col_Gen: for C in 15 downto 0 generate
+		pixel_inst: pixel 
+		generic map(ROW=>R, COL=>C)
+		port map(
+    		clock => clock,
+			reset => reset,
+			l1acc => l1acc,
+    		din => d(R)(C),
+    		dout => pix_dout(R)(C)
+  		);
+	end generate Pix_Col_Gen;
+end generate Pix_Row_Gen;
 
-T3_gen: for i in 31 downto 0 generate
+-- 1st tier merge cells 8Rx16C
+
+T1_R_gen: for R in 7 downto 0 generate
+	T1_C_gen: for C in 15 downto 0 generate
+	    merge_inst: merge 
+	        generic map( FIFO_DEPTH => 4 )
+	        port map( clock => clock, reset => reset, a => pix_dout(2*R)(C), b => pix_dout((2*R)+1)(C), q => t2d(R)(C) );
+	end generate T1_C_gen;
+end generate T1_R_gen;
+
+-- 2nd tier merge cells 4Rx16C
+
+T2_R_gen: for R in 3 downto 0 generate
+	T2_C_gen: for C in 15 downto 0 generate
+	    merge_inst: merge 
+	        generic map( FIFO_DEPTH => 8 )
+	        port map( clock => clock, reset => reset, a => t2d(2*R)(C), b => t2d((2*R)+1)(C), q => t3d(R)(C) );
+	end generate T2_C_gen;
+end generate T2_R_gen;
+
+-- 3rd tier merge cells 2Rx16C
+
+T3_R_gen: for R in 1 downto 0 generate
+	T3_C_gen: for C in 15 downto 0 generate
+	    merge_inst: merge 
+	        generic map( FIFO_DEPTH => 16 )
+	        port map( clock => clock, reset => reset, a => t3d(2*R)(C), b => t3d((2*R)+1)(C), q => t4d(R)(C) );
+	end generate T3_C_gen;
+end generate T3_R_gen;
+
+-- 4th tier merge cells 16C
+
+T4_gen: for C in 15 downto 0 generate
     merge_inst: merge 
         generic map( FIFO_DEPTH => 16 )
-        port map( clock => clock, reset => reset, a => t3d(2*i), b => t3d((2*i)+1), q => t4d(i) );
-end generate T3_gen;
-
-T4_gen: for i in 15 downto 0 generate
-    merge_inst: merge 
-        generic map( FIFO_DEPTH => 16 )
-        port map( clock => clock, reset => reset, a => t4d(2*i), b => t4d((2*i)+1), q => t5d(i) );
+        port map( clock => clock, reset => reset, a => t4d(0)(C), b => t4d(1)(C), q => t5d(C) );
 end generate T4_gen;
 
-T5_gen: for i in 7 downto 0 generate
+-- 5th tier merge cells 8C
+
+T5_gen: for C in 7 downto 0 generate
     merge_inst: merge 
         generic map( FIFO_DEPTH => 16 )
-        port map( clock => clock, reset => reset, a => t5d(2*i), b => t5d((2*i)+1), q => t6d(i) );
+        port map( clock => clock, reset => reset, a => t5d(2*C), b => t5d((2*C)+1), q => t6d(C) );
 end generate T5_gen;
 
-T6_gen: for i in 3 downto 0 generate
+-- 6th tier merge cells 4C
+
+T6_gen: for C in 3 downto 0 generate
     merge_inst: merge 
         generic map( FIFO_DEPTH => 16 )
-        port map( clock => clock, reset => reset, a => t6d(2*i), b => t6d((2*i)+1), q => t7d(i) );
+        port map( clock => clock, reset => reset, a => t6d(2*C), b => t6d((2*C)+1), q => t7d(C) );
 end generate T6_gen;
 
-T7_gen: for i in 1 downto 0 generate
+-- 7th tier merge cells 2C
+
+T7_gen: for C in 1 downto 0 generate
     merge_inst: merge 
         generic map( FIFO_DEPTH => 16 )
-        port map( clock => clock, reset => reset, a => t7d(2*i), b => t7d((2*i)+1), q => t8d(i) );
+        port map( clock => clock, reset => reset, a => t7d(2*C), b => t7d((2*C)+1), q => t8d(C) );
 end generate T7_gen;
+
+-- 8th (and last tier) merge cell
 
 T8_merge_inst: merge 
     generic map( FIFO_DEPTH => 16 )

@@ -1,5 +1,5 @@
--- ETROC2 readout testbench 256 flat array version
--- jamieson olsen
+-- ETROC2 readout testbench
+-- jamieson olsen <jamieson@fnal.gov>
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -17,44 +17,22 @@ component etroc2 is
 port(
     clock: in std_logic;
     reset: in std_logic;
-    d: in pixel_data_array_256_type;
-    q: out pixel_data_type
+	l1acc: in std_logic;
+    d:     in  tdc_data_array_16_16_type;
+    q:     out pixel_data_type
   );
 end component;
 
 signal clock: std_logic := '0';
 signal reset: std_logic := '1';
-signal d: pixel_data_array_256_type;
-signal bcid: std_logic_vector(7 downto 0) := X"00";
-
-
-
-
-
-
-
-
-
-
-
-
-
+signal l1acc: std_logic := '0';
+signal d: tdc_data_array_16_16_type;
 
 begin
 
 clock <= not clock after 12.5ns; -- 40MHz BX
 
 reset <= '1', '0' after 47ns;
-
-bcid_proc: process(clock) -- free running bunch crossing ID counter
-begin
-    if rising_edge(clock) then
-        bcid <= std_logic_vector( unsigned(bcid) + 1 );
-    end if;
-end process bcid_proc;
-
-
-
 
 main: process
 
@@ -64,36 +42,31 @@ procedure clr_all is
 begin
     InitLoopR: for R in 15 downto 0 loop
         InitLoopC: for C in 15 downto 0 loop
-            d(16*R+C).valid <= '0';
-            d(16*R+C).toa <= (others=>'0');
-            d(16*R+C).tot <= (others=>'0');
-            d(16*R+C).cal <= (others=>'0');
-            d(16*R+C).row <= std_logic_vector(to_unsigned(R,4));
-            d(16*R+C).col <= std_logic_vector(to_unsigned(C,4));
-            d(16*R+C).bcid <= (others=>'0');
+            d(R)(C).valid <= '0';
+            d(R)(C).toa <= (others=>'0');
+            d(R)(C).tot <= (others=>'0');
+            d(R)(C).cal <= (others=>'0');
         end loop InitLoopC;
     end loop InitLoopR;
 end procedure;
 
 procedure set_pixel (constant row,col,toa,tot,cal: in integer) is
 begin
-    d(16*row+col).valid <= '1';
-    d(16*row+col).tot   <= std_logic_vector(to_unsigned(tot,9));
-    d(16*row+col).toa   <= std_logic_vector(to_unsigned(toa,10));
-    d(16*row+col).cal   <= std_logic_vector(to_unsigned(cal,10));
-    d(16*row+col).bcid  <= bcid;
+    d(row)(col).valid <= '1';
+    d(row)(col).tot   <= std_logic_vector(to_unsigned(tot,9));
+    d(row)(col).toa   <= std_logic_vector(to_unsigned(toa,10));
+    d(row)(col).cal   <= std_logic_vector(to_unsigned(cal,10));
 end procedure;
 
 procedure clr_pixel (constant row,col: in integer) is
 begin
-    d(16*row+col).valid <= '0';
-    d(16*row+col).toa   <= (others=>'0');
-    d(16*row+col).tot   <= (others=>'0');
-    d(16*row+col).cal   <= (others=>'0');
-    d(16*row+col).bcid  <= (others=>'0');
+    d(row)(col).valid <= '0';
+    d(row)(col).toa   <= (others=>'0');
+    d(row)(col).tot   <= (others=>'0');
+    d(row)(col).cal   <= (others=>'0');
 end procedure;
 
-begin
+begin -- do a few events by hand, gets tedious fast, will soon need to read events from file
 
 clr_all;
 
@@ -140,15 +113,6 @@ set_pixel(12, 1, 0, 0, 0);
 wait until falling_edge(clock);
 clr_all;
 
-
-
-
-
-
-
-
-
-
 wait for 1000ns;  
 
 -- another torture test, try back to back to back L1accepts!
@@ -177,31 +141,17 @@ set_pixel(14, 13, 0, 0, 0);
 set_pixel(13, 13, 0, 0, 0);
 set_pixel(2, 5, 0, 0, 0);
 set_pixel(4, 11, 0, 0, 0);
+l1acc <= '1';
 
 wait until falling_edge(clock);
 clr_all;
-
-
-
-
-
-
-
-
-
-
-
-
-
+l1acc <= '0';
 
 wait;
 end process main;
 
 
-
-
-
 DUT: etroc2
-port map( clock => clock, reset => reset, d => d );
+port map( clock => clock, reset => reset, l1acc => l1acc, d => d );
 
 end testbench_arch;

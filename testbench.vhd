@@ -66,56 +66,69 @@ begin
     d(row)(col).cal   <= (others=>'0');
 end procedure;
 
-begin -- do a few events by hand, gets tedious fast, will soon need to read events from file
+begin 
+
+-- do a few events by hand, gets tedious fast, will soon need to read events from file
+-- when making fake TDC hits be sure TOT value is above threshold or else it will not
+-- be written into the circular buffer!
 
 clr_all;
 
-wait for 500ns;
+wait for 1000ns;
+
+-- first event
 
 wait until falling_edge(clock);
 set_pixel(4, 3, 122, 45, 98);
-set_pixel(12, 4, 74, 5, 12);
+set_pixel(12, 4, 74, 15, 12);
 set_pixel(9, 9, 41, 12, 49);
 set_pixel(1, 14, 23, 92, 98);
-
 wait until falling_edge(clock);
 clr_all;
-
-
-wait for 1000ns;  -- whole bunch of hits here, 24 = 10% occupancy
-
+wait for 25ns * L1ACC_OFFSET;
+l1acc <= '1';
 wait until falling_edge(clock);
-set_pixel(6, 11, 0, 0, 0);
-set_pixel(15, 0, 0, 0, 0);
-set_pixel(12, 15, 0, 0, 0);
-set_pixel(15, 15, 0, 0, 0);
-set_pixel(11, 0, 0, 0, 0);
-set_pixel(1, 7, 0, 0, 0);
-set_pixel(2, 7, 0, 0, 0);
-set_pixel(3, 7, 0, 0, 0);
-set_pixel(4, 7, 0, 0, 0);
-set_pixel(5, 7, 0, 0, 0);
-set_pixel(6, 7, 0, 0, 0);
-set_pixel(7, 7, 0, 0, 0);
-set_pixel(8, 7, 0, 0, 0);
-set_pixel(9, 7, 0, 0, 0);
-set_pixel(10, 7, 0, 0, 0);
-set_pixel(11, 7, 0, 0, 0);
-set_pixel(12, 7, 0, 0, 0);
-set_pixel(13, 7, 0, 0, 0);
-set_pixel(14, 7, 0, 0, 0);
-set_pixel(15, 7, 0, 0, 0);
-set_pixel(4, 8, 0, 0, 0);
-set_pixel(12, 12, 0, 0, 0);
-set_pixel(9, 3, 0, 0, 0);
-set_pixel(12, 1, 0, 0, 0);
-
-wait until falling_edge(clock);
-clr_all;
+l1acc <= '0';
 
 wait for 1000ns;  
 
--- another torture test, try back to back to back L1accepts!
+-- a high occupancy event
+
+wait until falling_edge(clock);
+set_pixel(6, 11,  0, 21,  0);
+set_pixel(15, 0,  0, 22,  0);
+set_pixel(12, 15, 0, 23,  0);
+set_pixel(15, 15, 0, 18,  0);
+set_pixel(11, 0,  0, 43,  0);
+set_pixel(1, 7, 0, 16, 0);
+set_pixel(2, 7, 0, 78, 0);
+set_pixel(3, 7, 0, 12, 0);
+set_pixel(4, 7, 0, 32, 0);
+set_pixel(5, 7, 0, 23, 0);
+set_pixel(6, 7, 0, 75, 0);
+set_pixel(7, 7, 0, 76, 0);
+set_pixel(8, 7, 0, 77, 0);
+set_pixel(9, 7, 0, 90, 0);
+set_pixel(10, 7, 0, 13, 0);
+set_pixel(11, 7, 0, 14, 0);
+set_pixel(12, 7, 0, 15, 0);
+set_pixel(13, 7, 0, 19, 0);
+set_pixel(14, 7, 0, 19, 0);
+set_pixel(15, 7, 0, 23, 0);
+set_pixel(4, 8, 0, 21, 0);
+set_pixel(12, 12, 0, 56, 0);
+set_pixel(9, 3, 0, 11, 0);
+set_pixel(12, 1, 0, 47, 0);
+wait until falling_edge(clock);
+clr_all;
+wait for 25ns * L1ACC_OFFSET;
+l1acc <= '1';
+wait until falling_edge(clock);
+l1acc <= '0';
+
+wait for 1000ns;  
+
+-- now try back to back to back L1accepts
 
 wait until falling_edge(clock);
 set_pixel(6, 1, 106, 107, 108);
@@ -134,17 +147,21 @@ set_pixel(8, 8, 215, 216, 217);
 
 wait until falling_edge(clock);
 clr_all;
-set_pixel(2, 12, 0, 0, 0);
-set_pixel(3, 11, 0, 0, 0);
-set_pixel(7, 5, 0, 0, 0);
-set_pixel(14, 13, 0, 0, 0);
-set_pixel(13, 13, 0, 0, 0);
-set_pixel(2, 5, 0, 0, 0);
-set_pixel(4, 11, 0, 0, 0);
-l1acc <= '1';
+set_pixel(2,  12, 0, 61, 0);
+set_pixel(3,  11, 0, 62, 0);
+set_pixel(7,   5, 0, 63, 0);
+set_pixel(14, 13, 0, 64, 0);
+set_pixel(13, 13, 0, 65, 0);
+set_pixel(2,   5, 0, 66, 0);
+set_pixel(4,  11, 0, 67, 0);
 
 wait until falling_edge(clock);
 clr_all;
+wait for 25ns * (L1ACC_OFFSET -2) ;
+l1acc <= '1';
+wait until falling_edge(clock);
+wait until falling_edge(clock);
+wait until falling_edge(clock);
 l1acc <= '0';
 
 wait;

@@ -14,7 +14,7 @@ use ieee.numeric_std.all;
 use work.etroc2_package.all;
 
 entity pixel is
-generic(ROW,COL: integer range 0 to 3);
+generic(ROW,COL: integer range 0 to 15);
 port(
     clock: in std_logic;
 	reset: in std_logic;
@@ -26,10 +26,10 @@ end pixel;
 
 architecture pixel_arch of pixel is
 
-type memory_t is array(0 to 2**PIX_BUF_ADDR_WIDTH-1) of pixel_data_type;
+type memory_t is array((2**PIX_BUF_ADDR_WIDTH)-1 downto 0) of pixel_data_type;
 signal memory : memory_t;
 signal temp: pixel_data_type;
-signal wptr, rptr: integer range 0 to (2**PIX_BUF_ADDR_WIDTH-1);
+signal wptr, rptr: std_logic_vector(PIX_BUF_ADDR_WIDTH-1 downto 0) := (others=>'0');
 signal enum_reg: std_logic_vector( (pixel_data_type.enum'length-1) downto 0) := (others=>'0');
 
 begin
@@ -48,19 +48,19 @@ begin
 
 		if (reset='1') then
 
-			wptr <= 0;
-			rptr <= 0;
+			wptr <= (others=>'0');
+			rptr <= (others=>'0');
 			enum_reg <= (others=>'0');
 
 		else
 
-			wptr <= wptr + 1;
-			rptr <= wptr - L1ACC_OFFSET;
+			wptr <= std_logic_vector(unsigned(wptr) + 1);
+			rptr <= std_logic_vector(unsigned(wptr) - L1ACC_OFFSET);
 	
 			if (unsigned(temp.tot) > TOT_THRESHOLD) then
-				memory(wptr) <= temp; -- store tdc data in circ buffer
+				memory( to_integer(unsigned(wptr)) ) <= temp; -- store tdc data in circ buffer
 			else
-				memory(wptr) <= null_pixel_data; -- write all zeros to circ buffer
+				memory( to_integer(unsigned(wptr)) ) <= null_pixel_data; -- write all zeros to circ buffer
 			end if;
 	
 			if (l1acc='1') then
@@ -71,8 +71,20 @@ begin
 	end if;
 end process write_proc;
 
--- async read from buffer
+-- register the output
 
-dout <= memory(rptr) when (l1acc='1') else null_pixel_data;
+out_proc: process(clock) 
+begin
+	if rising_edge(clock) then
+		if (l1acc='1') then
+			dout <= memory( to_integer(unsigned(rptr)) );
+		else
+			dout <= null_pixel_data;
+		end if;
+	end if;
+end process out_proc;
+
+
+
 
 end pixel_arch;

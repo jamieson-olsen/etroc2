@@ -22,7 +22,7 @@ end etroc2;
 architecture etroc2_arch of etroc2 is
 
 component pixel is
-generic(ROW,COL: integer range 0 to 3);
+generic(ROW,COL: integer range 0 to 15);
 port(
     clock: in std_logic;
 	reset: in std_logic;
@@ -51,6 +51,7 @@ signal t6d: pixel_data_array_8_type;
 signal t7d: pixel_data_array_4_type;
 signal t8d: pixel_data_array_2_type;
 signal q_reg, t8q: pixel_data_type;
+signal bcid: std_logic_vector(11 downto 0) := (others=>'0');
 
 begin
 
@@ -64,8 +65,8 @@ Pix_Row_Gen: for R in 15 downto 0 generate
     		clock => clock,
 			reset => reset,
 			l1acc => l1acc,
-    		din => d(R)(C),
-    		dout => pix_dout(R)(C)
+    		din   => d(R)(C),
+    		dout  => pix_dout(R)(C)
   		);
 	end generate Pix_Col_Gen;
 end generate Pix_Row_Gen;
@@ -142,6 +143,11 @@ outproc: process(clock)
 begin
     if rising_edge(clock) then
         q_reg <= t8q;
+		if (reset='1') then
+			bcid <= (others=>'0');
+		else
+			bcid <= std_logic_vector( unsigned(bcid) + 1 );
+		end if;
     end if;           
 end process outproc;
 

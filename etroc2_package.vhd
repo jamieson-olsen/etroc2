@@ -26,10 +26,10 @@ type pixel_data_type is record -- 42 bits
     cal   : std_logic_vector(9 downto 0);
     row   : std_logic_vector(3 downto 0);
     col   : std_logic_vector(3 downto 0);
-    enum  : std_logic_vector(2 downto 0); -- event number counter
+    enum  : std_logic_vector(3 downto 0); -- event number counter
 end record pixel_data_type;
 
-constant null_pixel_data: pixel_data_type := ('0',"000000000","0000000000","0000000000","0000","0000","000");
+constant null_pixel_data: pixel_data_type := ('0',"000000000","0000000000","0000000000","0000","0000","0000");
 
 -- 1D pixel_data_arrays
 
@@ -50,7 +50,7 @@ constant TOA_THRESHOLD: integer := 10; -- currently not used
 
 constant L1ACC_OFFSET:  integer := 23;
 constant PIX_BUF_ADDR_WIDTH: integer := 8; 
-constant BUSY_WINDOW: integer := 10;
+constant BUSY_WINDOW: integer := 8;
 
 type slv_array_16_16_type is array (15 downto 0) of std_logic_vector(15 downto 0);
 

@@ -19,7 +19,7 @@ port(
     clock: in std_logic;
 	reset: in std_logic;
 	l1acc: in std_logic;
-    enum:  in std_logic_vector(2 downto 0);
+    enum:  in std_logic_vector(3 downto 0);
     din:   in tdc_data_type;
     dout:  out pixel_data_type
   );

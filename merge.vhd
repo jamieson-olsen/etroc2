@@ -44,7 +44,7 @@ port(
 	);
 end component;
 
-signal din_a, din_b, dout_a, dout_b : std_logic_vector(40 downto 0);
+signal din_a, din_b, dout_a, dout_b : std_logic_vector(41 downto 0);
 signal pix_a, pix_b: pixel_data_type;
 signal a_lte_b, re_a, re_b, empty_a, empty_b : std_logic;
 
@@ -58,7 +58,7 @@ din_b <= b.valid & b.tot & b.toa & b.cal & b.row & b.col & b.enum;
 -- instantiate FIFOs
 
 FIFO_A: FWFT_FIFO
-generic map ( DATA_WIDTH => 41, FIFO_DEPTH => FIFO_DEPTH)
+generic map ( DATA_WIDTH => 42, FIFO_DEPTH => FIFO_DEPTH)
 port map(
         CLK => clock,
 		RST => reset,
@@ -70,7 +70,7 @@ port map(
 	);
 
 FIFO_B: FWFT_FIFO
-generic map ( DATA_WIDTH => 41, FIFO_DEPTH => FIFO_DEPTH)
+generic map ( DATA_WIDTH => 42, FIFO_DEPTH => FIFO_DEPTH)
 port map(
         CLK => clock,
 		RST => reset,
@@ -83,21 +83,21 @@ port map(
 
 -- manually unpack FIFO outputs
 
-pix_a.valid <= dout_a(40);
-pix_a.tot   <= dout_a(39 downto 31);
-pix_a.toa   <= dout_a(30 downto 21);
-pix_a.cal   <= dout_a(20 downto 11);
-pix_a.row   <= dout_a(10 downto 7 );
-pix_a.col   <= dout_a(6 downto 3);
-pix_a.enum  <= dout_a(2 downto 0);
+pix_a.valid <= dout_a(41);
+pix_a.tot   <= dout_a(40 downto 32);
+pix_a.toa   <= dout_a(31 downto 22);
+pix_a.cal   <= dout_a(21 downto 12);
+pix_a.row   <= dout_a(11 downto 8 );
+pix_a.col   <= dout_a(7 downto 4);
+pix_a.enum  <= dout_a(3 downto 0);
 
-pix_b.valid <= dout_b(40);
-pix_b.tot   <= dout_b(39 downto 31);
-pix_b.toa   <= dout_b(30 downto 21);
-pix_b.cal   <= dout_b(20 downto 11);
-pix_b.row   <= dout_b(10 downto 7);
-pix_b.col   <= dout_b(6 downto 3);
-pix_b.enum  <= dout_b(2 downto  0);
+pix_b.valid <= dout_b(41);
+pix_b.tot   <= dout_b(40 downto 32);
+pix_b.toa   <= dout_b(31 downto 22);
+pix_b.cal   <= dout_b(21 downto 12);
+pix_b.row   <= dout_b(11 downto 8);
+pix_b.col   <= dout_b(7 downto 4);
+pix_b.enum  <= dout_b(3 downto  0);
 
 -- select logic consider the event number fields and use a LUT to choose the old
 

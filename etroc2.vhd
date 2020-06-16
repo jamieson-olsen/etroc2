@@ -27,7 +27,7 @@ port(
     clock: in std_logic;
 	reset: in std_logic;
 	l1acc: in std_logic;
-    enum:  in std_logic_vector(2 downto 0);
+    enum:  in std_logic_vector(3 downto 0);
     din:   in tdc_data_type;
     dout:  out pixel_data_type
   );
@@ -45,10 +45,11 @@ end component;
 
 component enum_count is
 port(
-    clock: in std_logic;
-	reset: in std_logic;
-	l1acc: in std_logic;
-    enum:  out std_logic_vector(2 downto 0 )
+    clock: in  std_logic;
+	reset: in  std_logic;
+	l1acc: in  std_logic;
+    val:   in  std_logic;
+    enum:  out std_logic_vector(3 downto 0 )
   );
 end component;
 
@@ -62,7 +63,7 @@ signal t7d: pixel_data_array_4_type;
 signal t8d: pixel_data_array_2_type;
 signal q_reg, t8q: pixel_data_type;
 signal bcid: std_logic_vector(11 downto 0) := (others=>'0');
-signal enum: std_logic_vector(2 downto 0);
+signal enum: std_logic_vector(3 downto 0);
 
 begin
 
@@ -71,6 +72,7 @@ port map(
     clock => clock,
 	reset => reset,
 	l1acc => l1acc,
+    val   => t8q.valid,
     enum  => enum
   );
 
@@ -125,7 +127,7 @@ end generate T3_R_gen;
 
 T4_gen: for C in 15 downto 0 generate
     merge_inst: merge 
-        generic map( FIFO_DEPTH => 16 )
+        generic map( FIFO_DEPTH => 32 )
         port map( clock => clock, reset => reset, a => t4d(0)(C), b => t4d(1)(C), q => t5d(C) );
 end generate T4_gen;
 
@@ -133,7 +135,7 @@ end generate T4_gen;
 
 T5_gen: for C in 7 downto 0 generate
     merge_inst: merge 
-        generic map( FIFO_DEPTH => 16 )
+        generic map( FIFO_DEPTH => 64 )
         port map( clock => clock, reset => reset, a => t5d(2*C), b => t5d((2*C)+1), q => t6d(C) );
 end generate T5_gen;
 
@@ -141,7 +143,7 @@ end generate T5_gen;
 
 T6_gen: for C in 3 downto 0 generate
     merge_inst: merge 
-        generic map( FIFO_DEPTH => 16 )
+        generic map( FIFO_DEPTH => 128 )
         port map( clock => clock, reset => reset, a => t6d(2*C), b => t6d((2*C)+1), q => t7d(C) );
 end generate T6_gen;
 
@@ -149,14 +151,14 @@ end generate T6_gen;
 
 T7_gen: for C in 1 downto 0 generate
     merge_inst: merge 
-        generic map( FIFO_DEPTH => 16 )
+        generic map( FIFO_DEPTH => 256 )
         port map( clock => clock, reset => reset, a => t7d(2*C), b => t7d((2*C)+1), q => t8d(C) );
 end generate T7_gen;
 
 -- 8th (and last tier) merge cell
 
 T8_merge_inst: merge 
-    generic map( FIFO_DEPTH => 16 )
+    generic map( FIFO_DEPTH => 512 )
     port map( clock => clock, reset => reset, a => t8d(0), b => t8d(1), q => t8q );
 
 outproc: process(clock)

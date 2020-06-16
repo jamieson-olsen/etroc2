@@ -19,7 +19,7 @@ constant null_tdc_data: tdc_data_type := ('0',"000000000","0000000000","00000000
 type tdc_data_array_16_type is array (15 downto 0) of tdc_data_type;
 type tdc_data_array_16_16_type is array (15 downto 0) of tdc_data_array_16_type;
 
-type pixel_data_type is record -- 41 bits
+type pixel_data_type is record -- 42 bits
     valid : std_logic;
     tot   : std_logic_vector(8 downto 0);
     toa   : std_logic_vector(9 downto 0);

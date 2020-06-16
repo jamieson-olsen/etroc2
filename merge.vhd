@@ -115,7 +115,7 @@ re_b <= '1' when (empty_a='1' and empty_b='0') else -- FIFO A is empty, FIFO B h
 
 q <= pix_a when (re_a='1' and re_b='0') else
      pix_b when (re_a='0' and re_b='1') else
-     ('0',"000000000","0000000000","0000000000","0000","0000","000");
+     null_pixel_data;
 
 end merge_arch;
 

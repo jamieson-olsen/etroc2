@@ -50,6 +50,9 @@ constant TOA_THRESHOLD: integer := 10; -- currently not used
 
 constant L1ACC_OFFSET:  integer := 23;
 constant PIX_BUF_ADDR_WIDTH: integer := 8; 
+constant BUSY_WINDOW: integer := 10;
+
+type slv_array_16_16_type is array (15 downto 0) of std_logic_vector(15 downto 0);
 
 end etroc2_package;
 

@@ -10,6 +10,7 @@
 --      note: if the BCID values are equal, read from A (slight bias here).
 --
 -- FIFO full conditions are not checked here
+-- Busy output is set if one or both FIFOs have data.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -115,7 +116,6 @@ re_b <= '1' when (empty_a='1' and empty_b='0') else -- FIFO A is empty, FIFO B h
 q <= pix_a when (re_a='1' and re_b='0') else
      pix_b when (re_a='0' and re_b='1') else
      ('0',"000000000","0000000000","0000000000","0000","0000","000");
-
 
 end merge_arch;
 

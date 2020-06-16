@@ -27,6 +27,7 @@ port(
     clock: in std_logic;
 	reset: in std_logic;
 	l1acc: in std_logic;
+    enum:  in std_logic_vector(2 downto 0);
     din:   in tdc_data_type;
     dout:  out pixel_data_type
   );
@@ -38,8 +39,17 @@ port(
     clock: in  std_logic;
     reset: in  std_logic;
     a,b:   in  pixel_data_type;
-    q:     out pixel_data_type
+	q:     out pixel_data_type
 );
+end component;
+
+component enum_count is
+port(
+    clock: in std_logic;
+	reset: in std_logic;
+	l1acc: in std_logic;
+    enum:  out std_logic_vector(2 downto 0 )
+  );
 end component;
 
 signal pix_dout: pixel_data_array_16_16_type;
@@ -52,8 +62,17 @@ signal t7d: pixel_data_array_4_type;
 signal t8d: pixel_data_array_2_type;
 signal q_reg, t8q: pixel_data_type;
 signal bcid: std_logic_vector(11 downto 0) := (others=>'0');
+signal enum: std_logic_vector(2 downto 0);
 
 begin
+
+enum_inst: enum_count
+port map(
+    clock => clock,
+	reset => reset,
+	l1acc => l1acc,
+    enum  => enum
+  );
 
 -- 16x16 pixel array
 
@@ -65,6 +84,7 @@ Pix_Row_Gen: for R in 15 downto 0 generate
     		clock => clock,
 			reset => reset,
 			l1acc => l1acc,
+            enum  => enum,
     		din   => d(R)(C),
     		dout  => pix_dout(R)(C)
   		);

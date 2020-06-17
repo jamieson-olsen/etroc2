@@ -45,14 +45,22 @@ type pixel_data_array_4_16_type  is array ( 3 downto 0) of pixel_data_array_16_t
 type pixel_data_array_8_16_type  is array ( 7 downto 0) of pixel_data_array_16_type;
 type pixel_data_array_16_16_type is array (15 downto 0) of pixel_data_array_16_type;
 
-constant TOT_THRESHOLD: integer := 10; -- TOT threshold in pixel cell
-constant TOA_THRESHOLD: integer := 10; -- currently not used
-
-constant L1ACC_OFFSET:  integer := 23;
-constant PIX_BUF_ADDR_WIDTH: integer := 8; 
-constant BUSY_WINDOW: integer := 8;
-
 type slv_array_16_16_type is array (15 downto 0) of std_logic_vector(15 downto 0);
+
+-- TOT threshold in pixel cell
+constant TOT_THRESHOLD: integer := 10;
+
+-- TOA threshold in pixel cell (not currently used)
+constant TOA_THRESHOLD: integer := 10;
+
+-- L1 trigger latency estimated to be 12.5us or 500BX
+constant L1ACC_OFFSET:  integer := 500;
+
+-- pixel circular buffer depth is set here. 9 = 2^9 = 512 deep
+constant PIX_BUF_ADDR_WIDTH: integer := 9; 
+
+-- set this equal to the latency of the merge network in clock ticks
+constant BUSY_WINDOW: integer := 8;
 
 end etroc2_package;
 

@@ -14,6 +14,7 @@ port(
     clock: in  std_logic;
     reset: in  std_logic;
 	l1acc: in  std_logic;
+    bc0:   in  std_logic;
     d:     in  tdc_data_array_16_16_type;
     q:     out pixel_data_type
   );
@@ -165,7 +166,7 @@ outproc: process(clock)
 begin
     if rising_edge(clock) then
         q_reg <= t8q;
-		if (reset='1') then
+		if (reset='1' or bc0='1') then
 			bcid <= (others=>'0');
 		else
 			bcid <= std_logic_vector( unsigned(bcid) + 1 );

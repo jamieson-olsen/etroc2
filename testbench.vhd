@@ -21,6 +21,7 @@ port(
     clock: in std_logic;
     reset: in std_logic;
 	l1acc: in std_logic;
+    bc0:   in std_logic;
     d:     in  tdc_data_array_16_16_type;
     q:     out pixel_data_type
   );
@@ -28,8 +29,9 @@ end component;
 
 signal clock: std_logic := '0';
 signal reset: std_logic := '1';
-signal l1acc: std_logic := '0';
+signal l1acc,bc0: std_logic := '0';
 signal d: tdc_data_array_16_16_type;
+signal bcid: integer := 0;
 
 type int_array_16 is array (15 downto 0) of integer;
 type int_array_16_16 is array(15 downto 0) of int_array_16;
@@ -43,22 +45,22 @@ reset <= '1', '0' after 47ns;
 process
     file inputfile: text;
     variable v_line: line;
-    variable v_bc: integer;
-    variable v_l1acc: std_logic;
+    variable v_bcid: integer := 0;
+    variable v_l1acc: std_logic := '0';
     variable v_tdc: int_array_16_16;
-    variable temp: std_logic_vector(31 downto 0);
+    variable temp: std_logic_vector(31 downto 0) := X"00000000";
     
---    procedure clr_all is
---    begin
---        InitLoopR: for R in 15 downto 0 loop
---            InitLoopC: for C in 15 downto 0 loop
---                d(R)(C).valid <= '0';
---                d(R)(C).toa <= (others=>'0');
---                d(R)(C).tot <= (others=>'0');
---                d(R)(C).cal <= (others=>'0');
---            end loop InitLoopC;
---        end loop InitLoopR;
---    end procedure;
+    procedure clr_all is
+    begin
+        InitLoopR: for R in 15 downto 0 loop
+            InitLoopC: for C in 15 downto 0 loop
+                d(R)(C).valid <= '0';
+                d(R)(C).toa <= (others=>'0');
+                d(R)(C).tot <= (others=>'0');
+                d(R)(C).cal <= (others=>'0');
+            end loop InitLoopC;
+        end loop InitLoopR;
+    end procedure;
 --
 --    procedure set_pixel (constant row,col,toa,tot,cal: in integer) is
 --    begin
@@ -89,14 +91,21 @@ file_open(inputfile, "MCburst00.dat", read_mode);
 -- bits 18..10 = tot(8..0)
 -- bits 9..0 = cal(9..0)
 
+clr_all;
+wait for 10us; -- add some delay here to let the circular buffer fill up completely
 
-readline(inputfile, v_line); -- throw away first line, it contains column names
-
-wait for 500ns;
+wait until falling_edge(clock);
+bc0 <= '1';
+wait until falling_edge(clock);
+bc0 <= '0';
 
 while not endfile(inputfile) loop
     readline(inputfile, v_line);
-    read(v_line, v_bc);
+   
+    if v_line.all'length = 0 or v_line.all(1) = '#' then  -- Skip empty lines and single-line comments
+        next;
+    end if;
+    read(v_line, v_bcid);
     read(v_line, v_l1acc);
     for R in 0 to 15 loop
         for C in 0 to 15 loop
@@ -106,6 +115,7 @@ while not endfile(inputfile) loop
 
     wait until falling_edge(clock);
     l1acc <= v_l1acc;
+    bcid <= v_bcid;
     for R in 0 to 15 loop
         for C in 0 to 15 loop
             temp := std_logic_vector( to_unsigned(v_tdc(R)(C),32) );
@@ -237,6 +247,6 @@ end process;
 
 
 DUT: etroc2
-port map( clock => clock, reset => reset, l1acc => l1acc, d => d );
+port map( clock => clock, reset => reset, l1acc => l1acc, bc0 => bc0, d => d );
 
 end testbench_arch;

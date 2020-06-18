@@ -50,7 +50,7 @@ port(
 	reset: in  std_logic;
 	l1acc: in  std_logic;
     val:   in  std_logic;
-    enum:  out std_logic_vector(3 downto 0 )
+    enum:  out std_logic_vector(3 downto 0)
   );
 end component;
 

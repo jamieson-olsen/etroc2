@@ -11,6 +11,8 @@
 --
 -- FIFO full conditions are not checked here
 -- Busy output is set if one or both FIFOs have data.
+--
+-- enable input causes the FIFO read action to pause, does not affect FIFO write ops
 
 library ieee;
 use ieee.std_logic_1164.all;

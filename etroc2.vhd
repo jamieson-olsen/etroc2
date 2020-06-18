@@ -16,7 +16,7 @@ port(
 	l1acc: in  std_logic;
     bc0:   in  std_logic;
     d:     in  tdc_data_array_16_16_type;
-    q:     out pixel_data_type
+    q:     out std_logic_vector(39 downto 0)
   );
 end etroc2;
 
@@ -54,6 +54,17 @@ port(
   );
 end component;
 
+component format is
+generic ( constant FIFO_DEPTH : positive := 4 );
+port(
+    clock: in  std_logic;
+    reset: in  std_logic;
+    bcid:  in  std_logic_vector(11 downto 0);
+    din:   in  pixel_data_type;
+    dout:  out std_logic_vector(39 downto 0)
+);
+end component;
+
 signal pix_dout: pixel_data_array_16_16_type;
 signal t2d: pixel_data_array_8_16_type;
 signal t3d: pixel_data_array_4_16_type;
@@ -62,7 +73,7 @@ signal t5d: pixel_data_array_16_type;
 signal t6d: pixel_data_array_8_type;
 signal t7d: pixel_data_array_4_type;
 signal t8d: pixel_data_array_2_type;
-signal q_reg, t8q: pixel_data_type;
+signal t8q: pixel_data_type;
 signal bcid: std_logic_vector(11 downto 0) := (others=>'0');
 signal enum: std_logic_vector(3 downto 0);
 
@@ -162,18 +173,25 @@ T8_merge_inst: merge
     generic map( FIFO_DEPTH => 512 )
     port map( clock => clock, reset => reset, a => t8d(0), b => t8d(1), q => t8q );
 
-outproc: process(clock)
+format_inst: format
+generic map ( FIFO_DEPTH => 16 )
+port map(
+    clock => clock,
+    reset => reset,
+    bcid  => bcid,
+    din   => t8q,
+    dout  => q
+);
+
+bcid_proc: process(clock)
 begin
     if rising_edge(clock) then
-        q_reg <= t8q;
 		if (reset='1' or bc0='1') then
 			bcid <= (others=>'0');
 		else
 			bcid <= std_logic_vector( unsigned(bcid) + 1 );
 		end if;
     end if;           
-end process outproc;
-
-q <= q_reg;
+end process bcid_proc;
 
 end etroc2_arch;

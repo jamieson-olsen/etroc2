@@ -4,12 +4,12 @@
 -- within an event hits is contiguous with no gaps between hits.
 -- there may or may not be gaps between events.
 --
--- output format is 40 bits:
+-- output format is 40 bits "constant word length"
 --
--- header:  "01" & "00" X"000000" & BCID(11..0)
---   data:  "10" & V & TOT(8..0) & TOA(9..0) & CAL(9..0) & ROW(3..0) & COL(3..0)
--- trailer: "11" & "00" & X"000000000"
---   idle:  X"0000000000"
+-- header:  "00" & "10" X"555555" & BCID(11..0)
+--   data:  "01" & Parity & ROW(3..0) & COL(3..0) & TOA(9..0) & TOT(8..0) & CAL(9..0)
+-- trailer: "11" & "11" & X"555555555"
+
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -21,10 +21,7 @@ generic ( constant FIFO_DEPTH : positive := 4 );
 port(
     clock: in  std_logic;
     reset: in  std_logic;
-    l1acc: in  std_logic;
-    enum:  in  std_logic_vector(3 downto 0);
     bcid:  in  std_logic_vector(11 downto 0);
-
     din:   in  pixel_data_type;
     dout:  out std_logic_vector(39 downto 0)
 );
@@ -48,6 +45,7 @@ port(
 end component;
 
 signal din_slv, fifo_dout: std_logic_vector(41 downto 0);
+signal pix: pixel_data_type;
 signal fifo_read, fifo_empty: std_logic;
 signal enum_reg: std_logic_vector(3 downto 0);
 
@@ -75,6 +73,14 @@ port map(
 		empty	=> fifo_empty
 	);
 
+pix.valid <= fifo_dout(41);
+pix.tot   <= fifo_dout(40 downto 32);
+pix.toa   <= fifo_dout(31 downto 22);
+pix.cal   <= fifo_dout(21 downto 12);
+pix.row   <= fifo_dout(11 downto  8);
+pix.col   <= fifo_dout( 7 downto  4);
+pix.enum  <= fifo_dout( 3 downto  0);
+
 fsm_proc: process(clock)
 begin
     if rising_edge(clock) then
@@ -86,7 +92,7 @@ begin
 
         else
 
-            enum_reg <= fifo_dout(3 downto 0);
+            enum_reg <= pix.enum;
 
             case state is 
 
@@ -105,7 +111,7 @@ begin
                 when dump =>
                     if (fifo_empty='1') then -- no more hits, no more events
                         state <= trailer0;
-                    elsif ( enum_reg /= fifo_dout(3 downto 0) ) then -- hits from the next event are here
+                    elsif ( enum_reg /= pix.enum ) then -- hits from the next event are here
                         state <= trailer1;
                     end if;
 
@@ -123,10 +129,9 @@ begin
     end if;
 end process fsm_proc;
 
-dout <= X"4000000000"                 when (state=header) else
-        "10" & fifo_dout(41 downto 4) when (state=dump) else
-        X"C000000000"                 when (state=trailer0 or state=trailer1) else
-        (others=>'0');
+dout <= X"2555555" & bcid(11 downto 0) when (state=header) else -- note this BCID will be wrong, will fix...
+        "10" & pix.valid & pix.row & pix.col & pix.toa & pix.tot & pix.cal when (state=dump) else
+        X"F555555555"; -- trailer/idle word
 
 end format_arch;
 

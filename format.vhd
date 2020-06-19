@@ -10,7 +10,6 @@
 --   data:  "01" & Parity & ROW(3..0) & COL(3..0) & TOA(9..0) & TOT(8..0) & CAL(9..0)
 -- trailer: "11" & "11" & X"555555555"
 
-
 library ieee;
 use ieee.std_logic_1164.all;
 
@@ -45,9 +44,8 @@ port(
 end component;
 
 signal din_slv, fifo_dout: std_logic_vector(41 downto 0);
-signal pix: pixel_data_type;
+signal pix, pix_reg: pixel_data_type;
 signal fifo_read, fifo_empty: std_logic;
-signal enum_reg: std_logic_vector(3 downto 0);
 
 type state_type is (rst, idle, header, dump, trailer0, trailer1);
 signal state: state_type;
@@ -56,9 +54,9 @@ begin
 
 din_slv <= din.valid & din.tot & din.toa & din.cal & din.row & din.col & din.enum;
 
-fifo_read <= '0' when (state=header) else
-             '0' when (state=trailer0) else
-             '0' when (state=trailer0) else
+fifo_read <= '0' when (state=idle and fifo_empty='0') else
+             '0' when (state=dump and pix_reg.enum /= pix.enum) else
+             '0' when (state=trailer1) else
              '1';
 
 data_fifo_inst: fwft_fifo
@@ -88,15 +86,16 @@ begin
         if (reset='1') then
 
             state <= rst;
-            enum_reg <= "0000";
+            pix_reg <= null_pixel_data;
 
         else
 
-            enum_reg <= pix.enum;
+            pix_reg <= pix;
 
             case state is 
 
-                when rst => state <= idle;
+                when rst => 
+                    state <= idle;
 
                 when idle =>
                     if (fifo_empty='0') then
@@ -111,7 +110,7 @@ begin
                 when dump =>
                     if (fifo_empty='1') then -- no more hits, no more events
                         state <= trailer0;
-                    elsif ( enum_reg /= pix.enum ) then -- hits from the next event are here
+                    elsif ( pix_reg.enum /= pix.enum ) then -- hits from the next event are here
                         state <= trailer1;
                     end if;
 
@@ -130,7 +129,7 @@ begin
 end process fsm_proc;
 
 dout <= X"2555555" & bcid(11 downto 0) when (state=header) else -- note this BCID will be wrong, will fix...
-        "10" & pix.valid & pix.row & pix.col & pix.toa & pix.tot & pix.cal when (state=dump) else
+        "10" & pix_reg.valid & pix_reg.row & pix_reg.col & pix_reg.toa & pix_reg.tot & pix_reg.cal when (state=dump) else
         X"F555555555"; -- trailer/idle word
 
 end format_arch;

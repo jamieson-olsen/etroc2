@@ -15,8 +15,8 @@ port(
     reset: in  std_logic;
 	l1acc: in  std_logic;
     bc0:   in  std_logic;
-    d:     in  tdc_data_array_16_16_type;
-    q:     out std_logic_vector(39 downto 0)
+    tdc:   in  tdc_data_array_16_16_type;
+    dout:  out std_logic_vector(39 downto 0)
   );
 end etroc2;
 
@@ -99,7 +99,7 @@ Pix_Row_Gen: for R in 15 downto 0 generate
 			reset => reset,
 			l1acc => l1acc,
             enum  => enum,
-    		din   => d(R)(C),
+    		din   => tdc(R)(C),
     		dout  => pix_dout(R)(C)
   		);
 	end generate Pix_Col_Gen;
@@ -174,13 +174,13 @@ T8_merge_inst: merge
     port map( clock => clock, reset => reset, a => t8d(0), b => t8d(1), q => t8q );
 
 format_inst: format
-generic map ( FIFO_DEPTH => 16 )
+generic map ( FIFO_DEPTH => 64 )
 port map(
     clock => clock,
     reset => reset,
     bcid  => bcid,
     din   => t8q,
-    dout  => q
+    dout  => dout
 );
 
 bcid_proc: process(clock)

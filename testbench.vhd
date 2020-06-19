@@ -18,12 +18,12 @@ architecture testbench_arch of testbench is
 
 component etroc2 is
 port(
-    clock: in std_logic;
-    reset: in std_logic;
-	l1acc: in std_logic;
-    bc0:   in std_logic;
-    d:     in  tdc_data_array_16_16_type;
-    q:     out pixel_data_type
+    clock: in  std_logic;
+    reset: in  std_logic;
+	l1acc: in  std_logic;
+    bc0:   in  std_logic;
+    tdc:   in  tdc_data_array_16_16_type;
+    dout:  out std_logic_vector(39 downto 0)
   );
 end component;
 
@@ -247,6 +247,6 @@ end process;
 
 
 DUT: etroc2
-port map( clock => clock, reset => reset, l1acc => l1acc, bc0 => bc0, d => d );
+port map( clock => clock, reset => reset, l1acc => l1acc, bc0 => bc0, tdc => d );
 
 end testbench_arch;
